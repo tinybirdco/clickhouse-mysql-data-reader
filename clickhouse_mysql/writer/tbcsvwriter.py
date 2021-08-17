@@ -9,7 +9,7 @@ from clickhouse_mysql.tableprocessor import TableProcessor
 
 import requests
 from requests_toolbelt.multipart.encoder import MultipartEncoder
-import json
+import shutil
 
 class TBCSVWriter(Writer):
     """Write into Tinybird via CSV file"""
@@ -93,10 +93,8 @@ class TBCSVWriter(Writer):
                     return 
 
                 logging.error(f"Import response {json_response}")
-                with tempfile.NamedTemporaryFile(mode='wb', delete=False) as tmp_file:
-                    for row in f:
-                        tmp_file.write(row)
-                    logging.error("Dumped temporary file: %s", tmp_file.name)
+                shutil.copy2(event.filename, '/tmp')
+                logging.error("Copied %s file to /tmp directory", event.filename)
 
         pass
 
