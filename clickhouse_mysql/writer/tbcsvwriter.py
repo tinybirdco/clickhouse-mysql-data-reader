@@ -92,12 +92,10 @@ class TBCSVWriter(Writer):
                     return 
 
                 logging.error(f"Import response {json_response}")
-                with tempfile.NamedTemporaryFile(mode='wb', delete=False) as tmp:
-                    for row in csv_file:
-                        tmp.write(row)
-                        logging.debug(row)
-
-                logging.error("Dump in the %s in the %s file to /tmp directory", tmp.name)
+                with tempfile.NamedTemporaryFile(mode='wb', delete=False) as tmp_file:
+                    shutil.copyfile(event.filename, f"/tmp/{tmp_file.name}")
+                    
+                logging.error("Dumped in %s", tmp_file.name)
 
         pass
 
