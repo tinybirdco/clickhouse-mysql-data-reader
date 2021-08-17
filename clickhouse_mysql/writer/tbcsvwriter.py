@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import os
 import logging
-import shlex
+import tempfile
 
 from clickhouse_mysql.writer.writer import Writer
 from clickhouse_mysql.tableprocessor import TableProcessor
@@ -77,24 +76,28 @@ class TBCSVWriter(Writer):
                 'mode': 'append'
             }
 
-            f = open(event.filename, 'rb')
-            m = MultipartEncoder(fields={'csv': ('csv', f, 'text/csv')})
+            with open(event.filename, 'rb') as f:
+                m = MultipartEncoder(fields={'csv': ('csv', f, 'text/csv')})
+                url = f"{self.tb_host}/v0/datasources"
+                response = requests.post(url, data=m,
+                    headers={'Authorization': 'Bearer ' + self.tb_token, 'Content-Type': m.content_type},
+                    params=params
+                )
             
-            url = f"{self.tb_host}/v0/datasources"
+                if response.status_code == 200:
+                    json_response = response.json()
+                    logging.debug(f"Import response {json_response}")
+                    error = response['error']
+                    if error is not None or len(error) > 0:
+                        logging.error("%s invalid rows", json_response['invalid_lines'])
+                        logging.error("%s rows in quarantine", json_response['quarantine_rows'])
+                        with tempfile.NamedTemporaryFile(mode='wb', delete=False) as tmp_file:
+                            for row in f:
+                                tmp_file.write(row)
+                            logging.error("Dumped temporary file: %s", tmp_file.name)
 
-            response = requests.post(url, data=m,
-                            headers={'Authorization': 'Bearer ' + self.tb_token, 'Content-Type': m.content_type},
-                            params=params
-                        )
-            
-            # logging.debug(response.text)
-            if response.status_code == 200:
-                json_object = json.loads(response.content)
-                logging.debug(f"Import id: {json_object['import_id']}")
-                # logging.debug(f"Response: {json.dumps(json_object, indent=2)}")
-
-            else:    
-                logging.debug(f"ERROR {response.text}")  
+                else:    
+                    logging.debug(f"ERROR {response.text}")  
 
         pass
 
