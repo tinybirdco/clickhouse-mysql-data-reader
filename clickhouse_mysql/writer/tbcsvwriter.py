@@ -76,8 +76,8 @@ class TBCSVWriter(Writer):
                 'mode': 'append'
             }
 
-            with open(event.filename, 'rb') as f:
-                m = MultipartEncoder(fields={'csv': ('csv', f, 'text/csv')})
+            with open(event.filename, 'rb') as csv_file:
+                m = MultipartEncoder(fields={'csv': ('csv', csv_file, 'text/csv')})
                 url = f"{self.tb_host}/v0/datasources"
                 response = requests.post(url, data=m,
                     headers={'Authorization': 'Bearer ' + self.tb_token, 'Content-Type': m.content_type},
@@ -85,7 +85,6 @@ class TBCSVWriter(Writer):
                 )
             
                 json_response = response.json()
-
                 invalid_lines = json_response['invalid_lines']
                 quarantine_rows = json_response['quarantine_rows']
                 if response.status_code == 200 and invalid_lines == 0 and quarantine_rows == 0:
@@ -93,8 +92,12 @@ class TBCSVWriter(Writer):
                     return 
 
                 logging.error(f"Import response {json_response}")
-                shutil.copy2(event.filename, '/tmp')
-                logging.error("Copied %s file to /tmp directory", event.filename)
+                with tempfile.NamedTemporaryFile(mode='wb', delete=False) as tmp:
+                    for row in csv_file:
+                        tmp.write(row)
+                        logging.debug(row)
+
+                logging.error("Dump in the %s in the %s file to /tmp directory", tmp.name)
 
         pass
 
