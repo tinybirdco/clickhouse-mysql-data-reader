@@ -84,23 +84,19 @@ class TBCSVWriter(Writer):
                     params=params
                 )
             
-                if response.status_code == 200:
-                    json_response = response.json()
+                json_response = response.json()
+
+                invalid_lines = json_response['invalid_lines']
+                quarantine_rows = json_response['quarantine_rows']
+                if response.status_code == 200 and invalid_lines == 0 and quarantine_rows == 0:
                     logging.debug(f"Import response {json_response}")
+                    return 
 
-                    invalid_lines = json_response['invalid_lines']
-                    quarantine_rows = json_response['quarantine_rows']
-                    if invalid_lines > 0 or quarantine_rows > 0:
-                        logging.error("%s invalid rows", invalid_lines)
-                        logging.error("%s rows in quarantine", quarantine_rows)
-                        logging.error(json_response['error'])
-                        with tempfile.NamedTemporaryFile(mode='wb', delete=False) as tmp_file:
-                            for row in f:
-                                tmp_file.write(row)
-                            logging.error("Dumped temporary file: %s", tmp_file.name)
-
-                else:    
-                    logging.debug(f"ERROR {response.text}")  
+                logging.error(f"Import response {json_response}")
+                with tempfile.NamedTemporaryFile(mode='wb', delete=False) as tmp_file:
+                    for row in f:
+                        tmp_file.write(row)
+                    logging.error("Dumped temporary file: %s", tmp_file.name)
 
         pass
 
