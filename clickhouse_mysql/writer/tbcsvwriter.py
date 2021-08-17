@@ -87,7 +87,7 @@ class TBCSVWriter(Writer):
                 if response.status_code == 200:
                     json_response = response.json()
                     logging.debug(f"Import response {json_response}")
-                    error = response['error']
+                    error = json_response['error']
                     if error is not None or len(error) > 0:
                         logging.error("%s invalid rows", json_response['invalid_lines'])
                         logging.error("%s rows in quarantine", json_response['quarantine_rows'])
