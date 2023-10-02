@@ -33,11 +33,11 @@ class BBPool(Pool):
     }
 
     buckets_num_total = 0
-    items_num_total = 0;
+    items_num_total = 0
 
     prev_time = None
     prev_buckets_count = 0
-    prev_items_count = 0;
+    prev_items_count = 0
 
     def __init__(
             self,
@@ -63,7 +63,6 @@ class BBPool(Pool):
 
     def insert(self, item):
         """Insert item into pool"""
-
         # which belt we'll insert item?
         belt_index = self.key_generator.generate(item)
 
@@ -85,10 +84,10 @@ class BBPool(Pool):
 
         if belt_index is None:
             for b_index in self.belts:
-                if self.rotate_belt(b_index, flush=True):
+                if self.rotate_belt(b_index, flush=False):
                     empty_belts_indexes.append(b_index)
         else:
-            if self.rotate_belt(belt_index, flush=True):
+            if self.rotate_belt(belt_index, flush=False):
                 empty_belts_indexes.append(belt_index)
 
         # delete belt
