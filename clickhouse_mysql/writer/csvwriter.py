@@ -7,6 +7,7 @@ import logging
 import copy
 import time
 import uuid
+import json
 
 from clickhouse_mysql.writer.writer import Writer
 from clickhouse_mysql.event.event import Event
@@ -128,6 +129,8 @@ class CSVWriter(Writer):
             headers = list(rows[0]['values'].keys())
             headers.insert(0, 'operation')
             headers.insert(1, 'tb_upd')
+            headers.insert(2, 'table')
+            headers.insert(3, 'payload')
 
             # self.fieldnames = sorted(self.convert(copy.copy(event.first_row())).keys())
             self.fieldnames = headers
@@ -135,6 +138,8 @@ class CSVWriter(Writer):
                 self.dst_schema = event.schema
             if self.dst_table is None:
                 self.dst_table = event.table
+
+            self.fieldnames = self.fieldnames[0:4]  # get only operation, tb_upd, table and payload
 
             self.writer = csv.DictWriter(self.file, fieldnames=self.fieldnames, quoting=csv.QUOTE_NONNUMERIC)
             if not self.header_written:
@@ -183,12 +188,16 @@ class CSVWriter(Writer):
             headers = list(rows[0]['values'].keys())
             headers.insert(0, 'operation')
             headers.insert(1, 'tb_upd')
+            headers.insert(2, 'table')
+            headers.insert(3, 'payload')
             
             self.fieldnames = headers
             if self.dst_schema is None:
                 self.dst_schema = event.schema
             if self.dst_table is None:
                 self.dst_table = event.table
+
+            self.fieldnames = self.fieldnames[0:4]  # get only operation, tb_upd, table and payload
 
             self.writer = csv.DictWriter(self.file, fieldnames=self.fieldnames, quoting=csv.QUOTE_NONNUMERIC)
             if not self.header_written:
@@ -245,6 +254,8 @@ class CSVWriter(Writer):
             headers = list(rows[0]['after_values'].keys())
             headers.insert(0, 'operation')
             headers.insert(1, 'tb_upd')
+            headers.insert(2, 'table')
+            headers.insert(3, 'payload')
             
             # self.fieldnames = sorted(headers)
             self.fieldnames = headers
@@ -252,6 +263,8 @@ class CSVWriter(Writer):
                 self.dst_schema = event.schema
             if self.dst_table is None:
                 self.dst_table = event.table
+
+            self.fieldnames = self.fieldnames[0:4]  # get only operation, tb_upd, table and payload
 
             self.writer = csv.DictWriter(self.file, fieldnames=self.fieldnames, quoting=csv.QUOTE_NONNUMERIC)
             if not self.header_written:
@@ -274,25 +287,31 @@ class CSVWriter(Writer):
 
     def generate_row(self, event):
         """ When using mempool or csvpool events are cached so you can receive different kind of events in the same list. These events should be handled in a different way """
-
+        row_w_payload = {}
         if isinstance(event.pymysqlreplication_event, WriteRowsEvent):
             for row in event:
-                row['tb_upd'] = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')
-                row['operation'] = 0
+                row_w_payload['tb_upd'] = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')
+                row_w_payload['operation'] = 0
+                row_w_payload['table'] = event.table
                 self.convert_null_values(row)
-                self.writer.writerow(self.convert(row))
+                row_w_payload['payload'] = json.dumps(row, default=str)
+                self.writer.writerow(self.convert(row_w_payload))
         elif isinstance(event.pymysqlreplication_event, DeleteRowsEvent):
             for row in event:
-                row['tb_upd'] = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')
-                row['operation'] = 2
+                row_w_payload['tb_upd'] = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')
+                row_w_payload['operation'] = 2
+                row_w_payload['table'] = event.table
                 self.convert_null_values(row)
-                self.writer.writerow(self.convert(row))
+                row_w_payload['payload'] = json.dumps(row, default=str)
+                self.writer.writerow(self.convert(row_w_payload))
         elif isinstance(event.pymysqlreplication_event, UpdateRowsEvent):
             for row in event.pymysqlreplication_event.rows:
-                row['after_values']['tb_upd'] = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')
-                row['after_values']['operation'] = 1
+                row_w_payload['tb_upd'] = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')
+                row_w_payload['operation'] = 1
+                row_w_payload['table'] = event.table
                 self.convert_null_values(row['after_values'])
-                self.writer.writerow(self.convert(row['after_values']))
+                row_w_payload['payload'] = json.dumps(row['after_values'], default=str)
+                self.writer.writerow(self.convert(row_w_payload))
     
 
     def push(self):
