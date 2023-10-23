@@ -296,7 +296,7 @@ class CSVWriter(Writer):
                 row_w_payload['tb_upd'] = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')
                 row_w_payload['operation'] = 0
                 row_w_payload['table'] = event.table
-                row_w_payload['schema'] = event.schema
+                row_w_payload['schema'] = str(event.schema).split('_')[0]
                 self.convert_null_values(row)
                 row_w_payload['payload'] = json.dumps(row, default=str)
                 self.writer.writerow(self.convert(row_w_payload))
@@ -305,7 +305,7 @@ class CSVWriter(Writer):
                 row_w_payload['tb_upd'] = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')
                 row_w_payload['operation'] = 2
                 row_w_payload['table'] = event.table
-                row_w_payload['schema'] = event.schema
+                row_w_payload['schema'] = str(event.schema).split('_')[0]
                 self.convert_null_values(row)
                 row_w_payload['payload'] = json.dumps(row, default=str)
                 self.writer.writerow(self.convert(row_w_payload))
@@ -314,7 +314,7 @@ class CSVWriter(Writer):
                 row_w_payload['tb_upd'] = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')
                 row_w_payload['operation'] = 1
                 row_w_payload['table'] = event.table
-                row_w_payload['schema'] = event.schema
+                row_w_payload['schema'] = str(event.schema).split('_')[0]
                 self.convert_null_values(row['after_values'])
                 row_w_payload['payload'] = json.dumps(row['after_values'], default=str)
                 self.writer.writerow(self.convert(row_w_payload))
