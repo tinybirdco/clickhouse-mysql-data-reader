@@ -130,6 +130,7 @@ class CSVWriter(Writer):
             headers.insert(0, 'operation')
             headers.insert(1, 'tb_upd')
             headers.insert(2, 'table')
+            headers.insert(3, 'schema')
             headers.insert(3, 'payload')
 
             # self.fieldnames = sorted(self.convert(copy.copy(event.first_row())).keys())
@@ -139,7 +140,7 @@ class CSVWriter(Writer):
             if self.dst_table is None:
                 self.dst_table = event.table
 
-            self.fieldnames = self.fieldnames[0:4]  # get only operation, tb_upd, table and payload
+            self.fieldnames = self.fieldnames[0:5]  # get only operation, tb_upd, table and payload
 
             self.writer = csv.DictWriter(self.file, fieldnames=self.fieldnames, quoting=csv.QUOTE_NONNUMERIC)
             if not self.header_written:
@@ -189,7 +190,8 @@ class CSVWriter(Writer):
             headers.insert(0, 'operation')
             headers.insert(1, 'tb_upd')
             headers.insert(2, 'table')
-            headers.insert(3, 'payload')
+            headers.insert(3, 'schema')
+            headers.insert(4, 'payload')
             
             self.fieldnames = headers
             if self.dst_schema is None:
@@ -197,7 +199,7 @@ class CSVWriter(Writer):
             if self.dst_table is None:
                 self.dst_table = event.table
 
-            self.fieldnames = self.fieldnames[0:4]  # get only operation, tb_upd, table and payload
+            self.fieldnames = self.fieldnames[0:5]  # get only operation, tb_upd, table and payload
 
             self.writer = csv.DictWriter(self.file, fieldnames=self.fieldnames, quoting=csv.QUOTE_NONNUMERIC)
             if not self.header_written:
@@ -255,7 +257,8 @@ class CSVWriter(Writer):
             headers.insert(0, 'operation')
             headers.insert(1, 'tb_upd')
             headers.insert(2, 'table')
-            headers.insert(3, 'payload')
+            headers.insert(3, 'schema')
+            headers.insert(4, 'payload')
             
             # self.fieldnames = sorted(headers)
             self.fieldnames = headers
@@ -264,7 +267,7 @@ class CSVWriter(Writer):
             if self.dst_table is None:
                 self.dst_table = event.table
 
-            self.fieldnames = self.fieldnames[0:4]  # get only operation, tb_upd, table and payload
+            self.fieldnames = self.fieldnames[0:5]  # get only operation, tb_upd, table and payload
 
             self.writer = csv.DictWriter(self.file, fieldnames=self.fieldnames, quoting=csv.QUOTE_NONNUMERIC)
             if not self.header_written:
@@ -293,6 +296,7 @@ class CSVWriter(Writer):
                 row_w_payload['tb_upd'] = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')
                 row_w_payload['operation'] = 0
                 row_w_payload['table'] = event.table
+                row_w_payload['schema'] = event.schema
                 self.convert_null_values(row)
                 row_w_payload['payload'] = json.dumps(row, default=str)
                 self.writer.writerow(self.convert(row_w_payload))
@@ -301,6 +305,7 @@ class CSVWriter(Writer):
                 row_w_payload['tb_upd'] = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')
                 row_w_payload['operation'] = 2
                 row_w_payload['table'] = event.table
+                row_w_payload['schema'] = event.schema
                 self.convert_null_values(row)
                 row_w_payload['payload'] = json.dumps(row, default=str)
                 self.writer.writerow(self.convert(row_w_payload))
@@ -309,6 +314,7 @@ class CSVWriter(Writer):
                 row_w_payload['tb_upd'] = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S.%f')
                 row_w_payload['operation'] = 1
                 row_w_payload['table'] = event.table
+                row_w_payload['schema'] = event.schema
                 self.convert_null_values(row['after_values'])
                 row_w_payload['payload'] = json.dumps(row['after_values'], default=str)
                 self.writer.writerow(self.convert(row_w_payload))
