@@ -135,7 +135,8 @@ class CSVWriter(Writer):
             headers.insert(2, 'table')
             headers.insert(3, 'schema')
             headers.insert(4, 'log_pos')
-            headers.insert(5, 'payload')
+            headers.insert(5, 'binlog_timestamp')
+            headers.insert(6, 'payload')
 
             # self.fieldnames = sorted(self.convert(copy.copy(event.first_row())).keys())
             self.fieldnames = headers
@@ -144,7 +145,7 @@ class CSVWriter(Writer):
             if self.dst_table is None:
                 self.dst_table = event.table
 
-            self.fieldnames = self.fieldnames[0:5]  # get only operation, tb_upd, table and payload
+            self.fieldnames = self.fieldnames[0:7]  # get only operation, tb_upd, table and payload
 
             self.writer = csv.DictWriter(self.file, fieldnames=self.fieldnames, quoting=csv.QUOTE_NONNUMERIC)
             if not self.header_written:
@@ -175,7 +176,8 @@ class CSVWriter(Writer):
                 row_w_payload['operation'] = 1
             row_w_payload['table'] = event.table
             row_w_payload['schema'] = str(event.schema).split('_')[0]
-            row_w_payload['log_pos'] = str(event.schema).split('_')[0]
+            row_w_payload['log_pos'] = event.pymysqlreplication_event.packet.log_pos
+            row_w_payload['binlog_timestamp'] = event.pymysqlreplication_event.timestamp
             self.convert_null_values(row)
             row_w_payload['payload'] = json.dumps(row, default=str)
             self.writer.writerow(self.convert(row_w_payload))

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import multiprocess as mp
+import multiprocessing as mp
 import logging
 
 from clickhouse_mysql.writer.writer import Writer
