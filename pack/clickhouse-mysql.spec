@@ -118,7 +118,7 @@ chown -R $CLICKHOUSE_USER:$CLICKHOUSE_GROUP /var/run/clickhouse-mysql
 chown -R $CLICKHOUSE_USER:$CLICKHOUSE_GROUP /var/log/clickhouse-mysql
 
 /usr/bin/pip3 install mysqlclient
-/usr/bin/pip3 install mysql-replication==0.44
+/usr/bin/pip3 install mysql-replication==0.45.1
 /usr/bin/pip3 install clickhouse-driver
 /usr/bin/pip3 install configobj
 
