@@ -239,7 +239,7 @@ class MySQLReader(Reader):
 
     def process_first_event(self, event):
         if "{}.{}".format(event.schema, event.table) not in self.first_rows_passed:
-            Util.log_row(event.first_row(), "first row in replication {}.{}".format(event.schema, event.table))
+            Util.log_row(event.first_row(), "first row in replication {}.{} - binlog pos {}".format(event.schema, event.table, event.pymysqlreplication_event.packet.log_pos))
             self.first_rows_passed.append("{}.{}".format(event.schema, event.table))
         logging.info(self.first_rows_passed)
 
@@ -403,8 +403,7 @@ class MySQLReader(Reader):
                 self.stat_init_fetch_loop()
 
                 try:
-                    logging.debug('Pre-start binlog position: ' + self.binlog_stream.log_file + ":" + str(
-                        self.binlog_stream.log_pos) if self.binlog_stream.log_pos is not None else "undef")
+                    logging.debug('Pre-start binlog position: ' + self.binlog_stream.log_file + ":" + str(self.binlog_stream.log_pos) if self.binlog_stream.log_pos is not None else "undef")
 
                     # fetch available events from MySQL
                     for mysql_event in self.binlog_stream:
@@ -426,8 +425,8 @@ class MySQLReader(Reader):
                             # skip other unhandled events
                             pass
 
-                    # after event processed, we need to handle current binlog position
-                    self.process_binlog_position(self.binlog_stream.log_file, self.binlog_stream.log_pos)
+                        # after event processed, we need to handle current binlog position
+                        self.process_binlog_position(self.binlog_stream.log_file, self.binlog_stream.log_pos)
 
                 except Exception as ex:
                     if self.blocking:

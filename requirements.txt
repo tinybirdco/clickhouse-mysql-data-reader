@@ -1,5 +1,5 @@
 clickhouse-driver==0.2.0
-mysql-replication==0.23
+mysql-replication==0.45.1
 mysqlclient==2.0.3
 PyMySQL==1.0.2
 pytz==2021.1
