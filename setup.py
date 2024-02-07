@@ -75,7 +75,7 @@ setup(
     # https://packaging.python.org/en/latest/requirements.html
     install_requires=[
         'mysqlclient',
-        'mysql-replication==0.45.1',
+        'mysql-replication==1.0.6',
         'clickhouse-driver',
         'configobj',
         'setuptools',
