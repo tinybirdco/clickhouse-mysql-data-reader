@@ -76,8 +76,7 @@ class TBCSVWriter(Writer):
                     params=params,
                     verify=False)
 
-                # logging.debug(response.text)
-                logging.info(response.json())
+                logging.info(response.content)
                 if response.status_code == 200:
                     json_object = json.loads(response.content)
                     logging.debug(f"Import id: {json_object['import_id']}")
