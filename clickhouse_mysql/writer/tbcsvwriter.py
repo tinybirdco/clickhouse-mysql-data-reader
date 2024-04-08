@@ -22,6 +22,8 @@ class TBCSVWriter(Writer):
     tb_host = None
     tb_token = None
 
+    not_uploaded = None
+
     def __init__(
             self,
             tb_host,
@@ -30,6 +32,7 @@ class TBCSVWriter(Writer):
             dst_table=None,
             dst_table_prefix=None,
             dst_distribute=False,
+            not_uploaded=False,
     ):
         # if dst_distribute and dst_schema is not None:
         #     dst_schema += "_all"
@@ -50,6 +53,7 @@ class TBCSVWriter(Writer):
         self.dst_table = dst_table
         self.dst_table_prefix = dst_table_prefix
         self.dst_distribute = dst_distribute
+        self.not_uploaded = not_uploaded
 
 
     def uploadCSV(self, table, filename, tries=1):
@@ -76,7 +80,7 @@ class TBCSVWriter(Writer):
                     params=params,
                     verify=False)
 
-                logging.info(response.content)
+                logging.info(response.content) # this is ugly, but we need to check what is in the response for some detected errors
                 if response.status_code == 200:
                     json_object = json.loads(response.content)
                     logging.debug(f"Import id: {json_object['import_id']}")
@@ -92,6 +96,7 @@ class TBCSVWriter(Writer):
                     time.sleep(tries)
                     logging.info(f"Retrying { tries } of { limit_of_retries }")
                     if tries > limit_of_retries:
+                        self.not_uploaded = True
                         return
                     self.uploadCSV(table, filename, tries + 1)
         except Exception as e:
@@ -100,6 +105,7 @@ class TBCSVWriter(Writer):
             time.sleep(tries * tries)
             logging.info(f"Retrying { tries } of { limit_of_retries }")
             if tries > limit_of_retries:
+                self.not_uploaded = True
                 return
             self.uploadCSV(table, filename, tries + 1)
 
