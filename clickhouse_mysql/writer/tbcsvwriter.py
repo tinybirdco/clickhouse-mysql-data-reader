@@ -58,6 +58,7 @@ class TBCSVWriter(Writer):
 
     def uploadCSV(self, table, filename, tries=1):
         limit_of_retries = 3
+        self.not_uploaded = False
         params = {
             'name': table,
             'mode': 'append',
