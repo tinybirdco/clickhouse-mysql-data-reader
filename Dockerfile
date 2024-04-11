@@ -20,5 +20,5 @@ COPY . .
 run python3.8 -m pip wheel --wheel-dir=/tmp/clickkhouse-mysql-data-reader/ .
 run find /tmp/clickkhouse-mysql-data-reader/ -name *.whl -exec pip install {} \;
 
-ENTRYPOINT ["./init.sh"]
-cmd ["--config-file=./clickhouse-mysql.conf"]
+ENTRYPOINT ["./init-docker.sh"]
+cmd ["--config-file=./clickhouse-mysql-docker.conf"]
