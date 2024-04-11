@@ -203,6 +203,9 @@ class CSVWriter(Writer):
     def destroy(self):
         if self.delete and os.path.isfile(self.path):
             self.close()
+            if self.next_writer_builder and self.next_writer_builder.get().not_uploaded:
+                logging.error(f"CSV { self.path } not uploaded into TB")
+                return
             os.remove(self.path)
 
 if __name__ == '__main__':

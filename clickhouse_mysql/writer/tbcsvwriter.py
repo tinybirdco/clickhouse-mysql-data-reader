@@ -22,6 +22,8 @@ class TBCSVWriter(Writer):
     tb_host = None
     tb_token = None
 
+    not_uploaded = None
+
     def __init__(
             self,
             tb_host,
@@ -30,6 +32,7 @@ class TBCSVWriter(Writer):
             dst_table=None,
             dst_table_prefix=None,
             dst_distribute=False,
+            not_uploaded=False,
     ):
         # if dst_distribute and dst_schema is not None:
         #     dst_schema += "_all"
@@ -44,16 +47,18 @@ class TBCSVWriter(Writer):
         if self.tb_host is None or self.tb_token is None:
             logging.critical(
                 f" Host: {self.tb_host} or token {self.tb_token} is missing")
-            return None
+            return
 
         self.dst_schema = dst_schema
         self.dst_table = dst_table
         self.dst_table_prefix = dst_table_prefix
         self.dst_distribute = dst_distribute
+        self.not_uploaded = not_uploaded
 
 
     def uploadCSV(self, table, filename, tries=1):
         limit_of_retries = 3
+        self.not_uploaded = False
         params = {
             'name': table,
             'mode': 'append',
@@ -76,32 +81,32 @@ class TBCSVWriter(Writer):
                     params=params,
                     verify=False)
 
-                # logging.debug(response.text)
-                logging.info(response.json())
+                logging.info(response.content)  # this is ugly, but we need to check what is in the response for some detected errors
                 if response.status_code == 200:
                     json_object = json.loads(response.content)
                     logging.debug(f"Import id: {json_object['import_id']}")
                 elif response.status_code == 429:
                     retry_after = int(response.headers['Retry-After']) + tries
-                    logging.error(
-                        f"Too many requests retrying in {retry_after} seconds to upload {filename } to {table}")
+                    logging.error(f"Too many requests retrying in {retry_after} seconds to upload {filename} to {table}")
                     time.sleep(retry_after)
                     self.uploadCSV(table, filename, tries + 1)
                 else:
-                    # In case of error let's retry only
-                    logging.exception(response.json())
-                    time.sleep(tries)
-                    logging.info(f"Retrying { tries } of { limit_of_retries }")
+                    # In case of error let's retry only `limit_of_retries` times
+                    logging.exception(response.content)
                     if tries > limit_of_retries:
+                        self.not_uploaded = True
                         return
+                    logging.info(f"Retrying {filename} when status {response.status_code}, try {tries} of {limit_of_retries}")
+                    time.sleep(tries)
                     self.uploadCSV(table, filename, tries + 1)
         except Exception as e:
             logging.exception(e)
-            # We wait tries^2 sec to try again
-            time.sleep(tries * tries)
-            logging.info(f"Retrying { tries } of { limit_of_retries }")
             if tries > limit_of_retries:
+                self.not_uploaded = True
                 return
+            # We wait tries^2 sec to try again
+            logging.info(f"Retrying {filename} when exception: try {tries} of {limit_of_retries}")
+            time.sleep(tries * tries)
             self.uploadCSV(table, filename, tries + 1)
 
     def insert(self, event_or_events=None):
@@ -124,7 +129,7 @@ class TBCSVWriter(Writer):
         logging.debug('class:%s insert %d rows', __class__, len(events))
 
         for event in events:
-            #schema = self.dst_schema if self.dst_schema else event.schema
+            # schema = self.dst_schema if self.dst_schema else event.schema
             table = self.dst_table if self.dst_table else event.table
             self.uploadCSV(table, event.filename)
 
@@ -231,7 +236,7 @@ class TBCSVWriter(Writer):
         #     )
 
         #     choptions = ""
-        #     if self.host:
+        #     if self.host::wq
         #         choptions += " --host=" + shlex.quote(self.host)
         #     if self.port:
         #         choptions += " --port=" + str(self.port)
