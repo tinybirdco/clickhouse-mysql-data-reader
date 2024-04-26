@@ -57,7 +57,6 @@ class TBCSVWriter(Writer):
 
 
     def uploadCSV(self, table, filename, tries=1):
-        limit_of_retries = 3
         self.not_uploaded = False
         params = {
             'name': table,
@@ -65,8 +64,10 @@ class TBCSVWriter(Writer):
             'dialect_delimiter': ','
         }
 
-        try:
+        limit_of_retries = 10
+        retry_after = 0
 
+        try:
             with open(filename, 'rb') as f:
                 m = MultipartEncoder(fields={'csv': ('csv', f, 'text/csv')})
                 url = f"{self.tb_host}/v0/datasources"
@@ -81,32 +82,43 @@ class TBCSVWriter(Writer):
                     params=params,
                     verify=False)
 
-                logging.info(response.content)  # this is ugly, but we need to check what is in the response for some detected errors
+                logging.debug(response.content)
                 if response.status_code == 200:
                     json_object = json.loads(response.content)
                     logging.debug(f"Import id: {json_object['import_id']}")
+                    return
+
                 elif response.status_code == 429:
+                    # retry with the recommended value
                     retry_after = int(response.headers['Retry-After']) + tries
                     logging.error(f"Too many requests retrying in {retry_after} seconds to upload {filename} to {table}")
-                    time.sleep(retry_after)
-                    self.uploadCSV(table, filename, tries + 1)
-                else:
-                    # In case of error let's retry only `limit_of_retries` times
-                    logging.exception(response.content)
+                elif response.status_code >= 500:
+                    # In case of server error let's retry `limit_of_retries` times, but exponentially
+                    logging.error(response.content)
                     if tries > limit_of_retries:
                         self.not_uploaded = True
                         return
-                    logging.info(f"Retrying {filename} when status {response.status_code}, try {tries} of {limit_of_retries}")
-                    time.sleep(tries)
-                    self.uploadCSV(table, filename, tries + 1)
+
+                    retry_after = 2 ** tries
+                    logging.info(f"Retrying {filename} when status {response.status_code}, waiting {retry_after}, try {tries} of {limit_of_retries}")
+                else:
+                    # In case of other client errors (400, 404, etc...) don't retry
+                    logging.error(response.content)
+                    logging.error(f"Not retrying {filename} when status {response.status_code}")
+                    self.not_uploaded = True
+                    return
+
         except Exception as e:
+            # As we don't know what went wrong... let's retry `limit_of_retries` times, but exponentially
             logging.exception(e)
             if tries > limit_of_retries:
                 self.not_uploaded = True
                 return
-            # We wait tries^2 sec to try again
-            logging.info(f"Retrying {filename} when exception: try {tries} of {limit_of_retries}")
-            time.sleep(tries * tries)
+
+            retry_after = 2 ** tries
+            logging.info(f"Retrying {filename} when exception, waiting {retry_after} try {tries} of {limit_of_retries}")
+        finally:
+            time.sleep(retry_time)
             self.uploadCSV(table, filename, tries + 1)
 
     def insert(self, event_or_events=None):
