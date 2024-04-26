@@ -118,7 +118,7 @@ class TBCSVWriter(Writer):
             retry_after = 2 ** tries
             logging.info(f"Retrying {filename} when exception, waiting {retry_after} try {tries} of {limit_of_retries}")
         finally:
-            time.sleep(retry_time)
+            time.sleep(retry_after)
             self.uploadCSV(table, filename, tries + 1)
 
     def insert(self, event_or_events=None):
